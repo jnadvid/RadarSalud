@@ -1,0 +1,6 @@
+# Mantener finales de línea Windows en los scripts .bat/.cmd
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Scripts de shell siempre con LF
+*.sh text eol=lf

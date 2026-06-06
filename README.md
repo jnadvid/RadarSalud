@@ -41,6 +41,18 @@ investigadores y docencia**.
 
 ## 🚀 Instalación rápida (sin Docker)
 
+### 🪟 Windows — todo en uno (recomendado)
+
+Haz **doble clic** en **`RadarSalud.bat`** (o ejecútalo desde `cmd`). El script,
+de forma automática: detecta Python, crea el entorno virtual, instala las
+dependencias, crea la base SQLite, ingiere datos reales abiertos, detecta
+anomalías, **abre el navegador** y arranca el servidor. Requisito previo:
+[Python 3.11+](https://www.python.org/downloads/) con *“Add Python to PATH”*.
+
+Para detener el servidor: `Ctrl+C` en la ventana o ciérrala.
+
+### 🐧 Linux / macOS
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
