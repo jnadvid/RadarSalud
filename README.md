@@ -31,6 +31,21 @@ investigadores y docencia**.
   color por severidad y marcado claro de la simulación.
 - ⚡ **API FastAPI** (`/docs`) y **CLI Typer**.
 
+## 🖥️ Panel de vigilancia en vivo
+
+El panel principal (`/`) es una herramienta de monitorización lista para usar:
+
+- **Botón “🔄 Actualizar datos reales ahora”**: extrae datos reales (mortalidad
+  por provincia del ISCIII MoMo + catálogo/RSS), los **analiza** y refresca todo,
+  **sin tocar la terminal**. Corre en segundo plano con barra de progreso.
+- **Gráficas en tiempo real** (se refrescan solas cada 30 s):
+  - Mortalidad nacional **observada vs. esperada** (serie diaria).
+  - **Top provincias por exceso** de mortalidad.
+  - **Alertas por severidad**.
+- **Indicadores**: observaciones reales, última fecha de datos, alertas, fuentes.
+
+Así, abriendo el navegador y pulsando un botón, ya ves datos reales analizados.
+
 ## 🔑 Los tres modos de dato
 
 | `data_mode`     | Origen                                   | Mezcla |

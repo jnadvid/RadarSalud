@@ -14,6 +14,7 @@ from radarsalud import __version__
 from radarsalud.api import (
     routes_alerts,
     routes_analytics,
+    routes_dashboard,
     routes_ingestion,
     routes_maps,
     routes_observations,
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_analytics.router)
     app.include_router(routes_ingestion.router)
     app.include_router(routes_simulation.router)
+    app.include_router(routes_dashboard.router)
 
     # --- Salud -------------------------------------------------------------
     @app.get("/health", tags=["meta"])
