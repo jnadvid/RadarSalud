@@ -43,7 +43,52 @@ def _popup_html(alert: dict[str, Any]) -> str:
     )
 
 
-def build_map(alerts: list[dict[str, Any]], *, title: str = "RadarSalud") -> folium.Map:
+def _source_popup_html(s: dict[str, Any]) -> str:
+    def esc(x: Any) -> str:
+        return html.escape("" if x is None else str(x))
+
+    url = s.get("url")
+    url_html = f'<a href="{esc(url)}" target="_blank" rel="noopener">{esc(url)}</a>' if url else "—"
+    rows = [
+        f"<b>📡 Fuente:</b> {esc(s.get('name'))}",
+        f"<b>Organización:</b> {esc(s.get('organization'))}",
+        f"<b>Ámbito:</b> {esc(s.get('level'))} {esc(s.get('autonomous_community') or '')}",
+        f"<b>Categoría:</b> {esc(s.get('category'))}",
+        f"<b>Acceso:</b> {esc(s.get('access_mode'))}",
+        f"<b>Habilitada:</b> {'sí' if s.get('enabled') else 'no'}",
+        f"<b>Estado:</b> {esc(s.get('status'))} ({esc(s.get('message'))})",
+        f"<b>Última comprobación:</b> {esc(s.get('last_checked_at'))}",
+        f"<b>URL:</b> {url_html}",
+    ]
+    return '<div style="font-size:13px;max-width:320px;line-height:1.4">' + "<br>".join(rows) + "</div>"
+
+
+def _add_sources_layer(fmap: folium.Map, sources: list[dict[str, Any]]) -> None:
+    """Añade una capa de cobertura de fuentes, coloreada por estado."""
+    if not sources:
+        return
+    group = folium.FeatureGroup(name="📡 Fuentes (cobertura)", show=False)
+    for s in sources:
+        lat, lon = s.get("latitude"), s.get("longitude")
+        if lat is None or lon is None:
+            continue
+        color = s.get("color", "#95a5a6")
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=5,
+            color="#2c3e50",
+            weight=1,
+            fill=True,
+            fill_color=color if s.get("enabled") else "#ffffff",
+            fill_opacity=0.9 if s.get("enabled") else 0.4,
+            popup=folium.Popup(_source_popup_html(s), max_width=340),
+            tooltip=f"📡 {s.get('name')} · {s.get('status')}",
+        ).add_to(group)
+    group.add_to(fmap)
+
+
+def build_map(alerts: list[dict[str, Any]], *, sources: list[dict[str, Any]] | None = None,
+              title: str = "RadarSalud") -> folium.Map:
     """Construye un objeto folium.Map con marcadores y capas conmutables."""
     fmap = folium.Map(
         location=list(SPAIN_CENTER),
@@ -104,6 +149,8 @@ def build_map(alerts: list[dict[str, Any]], *, title: str = "RadarSalud") -> fol
             popup=folium.Popup(_popup_html(alert), max_width=340),
         ).add_to(get_group(layer_name(event), show=False))
 
+    _add_sources_layer(fmap, sources or [])
+
     folium.LayerControl(collapsed=False).add_to(fmap)
 
     # Leyenda fija con aviso de simulación.
@@ -116,13 +163,18 @@ def build_map(alerts: list[dict[str, Any]], *, title: str = "RadarSalud") -> fol
       <span style="color:#f1c40f">●</span> Media
       <span style="color:#e67e22">●</span> Alta
       <span style="color:#e74c3c">●</span> Crítica<br>
-      <span style="color:#8e44ad">◌</span> Borde morado discontinuo = SIMULACIÓN
+      <span style="color:#8e44ad">◌</span> Borde morado discontinuo = SIMULACIÓN<br>
+      <b>Fuentes</b> (capa opcional):
+      <span style="color:#27ae60">●</span> operativa
+      <span style="color:#c0392b">●</span> caída
+      <span style="color:#95a5a6">●</span> sin comprobar
     </div>
     """
     fmap.get_root().html.add_child(folium.Element(legend))
     return fmap
 
 
-def render_map_html(alerts: list[dict[str, Any]]) -> str:
+def render_map_html(alerts: list[dict[str, Any]],
+                    sources: list[dict[str, Any]] | None = None) -> str:
     """Devuelve el HTML de página completa del mapa (standalone)."""
-    return build_map(alerts).get_root().render()
+    return build_map(alerts, sources=sources).get_root().render()

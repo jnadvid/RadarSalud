@@ -51,6 +51,7 @@ def seed_catalog(session: Session) -> int:
         source.enabled = bool(enabled)
         source.notes = entry.get("notes")
         source.is_real_source = bool(entry.get("is_real_source", True))
+        source.autonomous_community = entry.get("autonomous_community")
         count += 1
     session.commit()
     logger.info("Catálogo sembrado: %d fuentes", count)

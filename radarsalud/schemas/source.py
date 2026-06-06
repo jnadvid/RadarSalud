@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+__all__ = ["SourceBase", "SourceCreate", "SourceRead", "SourceToggle"]
+
 
 class SourceBase(BaseModel):
     name: str
@@ -28,4 +30,12 @@ class SourceRead(SourceBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    autonomous_community: str | None = None
     last_checked_at: datetime | None = None
+    last_check_ok: bool | None = None
+    last_check_http_status: int | None = None
+    last_check_message: str | None = None
+
+
+class SourceToggle(BaseModel):
+    enabled: bool

@@ -8,23 +8,30 @@
   <strong>pendiente de verificación</strong>. No se inventan URLs.
 </p>
 
+<div class="sources-toolbar">
+  <button class="btn primary" id="btn-check-all">🔎 Comprobar todas las fuentes</button>
+  <label class="muted"><input type="checkbox" id="include-datasets"> incluir datasets descubiertos</label>
+  <span id="check-result" class="check-result"></span>
+</div>
+
 <div class="legend-states">
   <span class="badge open">open</span> accesible ·
   <span class="badge api_key_required">api_key_required</span> requiere clave ·
   <span class="badge manual_download">manual_download</span> descarga manual ·
   <span class="badge pending_verification">pending_verification</span> sin verificar
+  &nbsp;|&nbsp; Estado: 🟢 operativa · 🔴 caída · ⚪ sin comprobar
 </div>
 
-<table class="table">
+<table class="table" id="sources-table">
   <thead>
     <tr>
       <th>Fuente</th><th>Organización</th><th>Categoría</th><th>Tipo</th>
-      <th>Estado</th><th>Habilitada</th><th>Licencia</th><th>URL</th>
+      <th>Acceso</th><th>Estado</th><th>Activa</th><th>Licencia</th><th>URL</th>
     </tr>
   </thead>
   <tbody>
     {% for s in sources %}
-    <tr>
+    <tr data-source-id="{{ s.id }}">
       <td><strong>{{ s.name }}</strong>
         {% if not s.is_real_source %}<span class="badge sim">no real</span>{% endif %}
       </td>
@@ -32,12 +39,27 @@
       <td>{{ s.category }}</td>
       <td>{{ s.source_type }}</td>
       <td><span class="badge {{ s.access_mode }}">{{ s.access_mode }}</span></td>
-      <td>{{ '✅' if s.enabled else '—' }}</td>
+      <td class="cell-status">
+        {% if s.last_check_ok is true %}<span title="{{ s.last_check_message }}">🟢 operativa</span>
+        {% elif s.last_check_ok is false %}<span title="{{ s.last_check_message }}">🔴 caída</span>
+        {% else %}<span class="muted" title="{{ s.last_check_message or 'sin comprobar' }}">⚪ —</span>{% endif %}
+      </td>
+      <td>
+        <label class="switch">
+          <input type="checkbox" class="toggle-enabled" {{ 'checked' if s.enabled else '' }}>
+          <span class="slider"></span>
+        </label>
+      </td>
       <td>{{ s.license or '—' }}</td>
       <td>{% if s.url %}<a href="{{ s.url }}" target="_blank" rel="noopener">↗</a>{% else %}—{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<p class="muted" style="margin-top:14px">
+  Las fuentes activas y su estado enriquecen el <a href="/map">mapa</a> en la capa
+  <em>“📡 Fuentes (cobertura)”</em>.
+</p>
 {% endblock %}
 {% block footer %}{{ sources|length }} fuentes{% endblock %}

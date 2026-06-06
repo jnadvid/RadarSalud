@@ -31,5 +31,13 @@ class Source(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_real_source: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # Comunidad autónoma de la fuente (para situarla en el mapa). None = nacional.
+    autonomous_community: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Resultado de la última comprobación de disponibilidad ("comprobar fuentes").
+    last_check_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    last_check_http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_check_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     def __repr__(self) -> str:  # pragma: no cover - representación de depuración
         return f"<Source {self.id} {self.name!r} {self.access_mode}>"

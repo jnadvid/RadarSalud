@@ -221,3 +221,15 @@ def provinces_in_community(community: str) -> list[Province]:
     """Lista de provincias de una comunidad autónoma."""
     canonical = normalize_community(community)
     return [p for p in PROVINCES if p.autonomous_community == canonical]
+
+
+def community_centroid(community: str | None) -> tuple[float, float] | None:
+    """Centroide (lat, lon) de una comunidad: media de sus provincias."""
+    if not community:
+        return None
+    provs = provinces_in_community(community)
+    if not provs:
+        return None
+    lat = sum(p.latitude for p in provs) / len(provs)
+    lon = sum(p.longitude for p in provs) / len(provs)
+    return (lat, lon)

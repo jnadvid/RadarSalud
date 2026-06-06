@@ -13,6 +13,7 @@ from radarsalud.services import (
     ingestion_service,
     map_service,
     simulation_service,
+    sources_service,
 )
 from radarsalud.utils.logging import configure_logging
 
@@ -47,6 +48,20 @@ def sources_list() -> None:
         for s in sources:
             flag = "✓" if s.enabled else " "
             typer.echo(f"[{flag}] {s.name:32s} {s.category:14s} {s.access_mode}")
+
+
+@app.command("sources-check")
+def sources_check(
+    include_datasets: bool = typer.Option(False, "--include-datasets"),
+) -> None:
+    """Comprueba todas las fuentes con URL y marca las que no responden."""
+    configure_logging()
+    with session_scope() as session:
+        result = sources_service.check_all_sources(session, include_datasets=include_datasets)
+    typer.echo(
+        f"🔎 {result['checked']} comprobadas · 🟢 {result['reachable']} operativas · "
+        f"🔴 {result['down']} caídas · ⚪ {result['not_checkable']} sin URL."
+    )
 
 
 @app.command("ingest")

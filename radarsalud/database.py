@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from radarsalud.config import get_settings
@@ -29,6 +29,32 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
+# Columnas añadidas tras la versión inicial. Mini-migración para SQLite: añade
+# las que falten sin perder datos (SQLite soporta ALTER TABLE ADD COLUMN).
+_LIGHTWEIGHT_MIGRATIONS: dict[str, dict[str, str]] = {
+    "sources": {
+        "autonomous_community": "VARCHAR(100)",
+        "last_check_ok": "BOOLEAN",
+        "last_check_http_status": "INTEGER",
+        "last_check_message": "TEXT",
+    },
+}
+
+
+def _run_lightweight_migrations() -> None:
+    """Añade columnas nuevas a tablas existentes (idempotente)."""
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table, columns in _LIGHTWEIGHT_MIGRATIONS.items():
+            if table not in existing_tables:
+                continue
+            present = {c["name"] for c in inspector.get_columns(table)}
+            for col, coltype in columns.items():
+                if col not in present:
+                    conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {coltype}'))
+
+
 def init_db() -> None:
     """Crea las carpetas de datos y todas las tablas si no existen."""
     get_settings().ensure_dirs()
@@ -36,6 +62,7 @@ def init_db() -> None:
     from radarsalud import models  # noqa: F401  (efecto secundario de registro)
 
     Base.metadata.create_all(bind=engine)
+    _run_lightweight_migrations()
 
 
 def get_session() -> Iterator[Session]:
