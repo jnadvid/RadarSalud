@@ -1,0 +1,342 @@
+# Catálogo de fuentes de RadarSalud
+# -----------------------------------------------------------------------------
+# Estados (access_mode):
+#   operative            -> fuente abierta accesible (portal/API que existe y funciona)
+#   api_key_required     -> requiere clave (se configura en .env)
+#   manual_download      -> hay datos abiertos pero se descargan/cargan a mano
+#   pending_verification -> fuente conocida pero URL/licencia/formato sin verificar
+#
+# Regla: NO se inventan URLs. Si una URL concreta no está verificada, se deja
+# `url: null` y estado `pending_verification`. Se listan dominios institucionales
+# reales solo cuando se conocen con seguridad.
+#
+# `connector` enlaza (cuando aplica) con un conector de código que sabe ingerir
+# la fuente. El resto son fuentes documentadas para descarga manual o futura.
+
+national:
+  - name: datos_gob_es
+    organization: "datos.gob.es (Gobierno de España)"
+    url: "https://datos.gob.es/es/apidata"
+    source_type: api
+    category: salud
+    license: "Variable por dataset (open data)"
+    access_mode: operative
+    refresh_frequency: diaria
+    connector: datos_gob_es
+    is_real_source: true
+    notes: >-
+      API abierta del catálogo nacional de datos. El conector descubre datasets
+      de salud pública y guarda sus metadatos. No todos los datasets son
+      descargables automáticamente.
+
+  - name: ine_poblacion
+    organization: "Instituto Nacional de Estadística (INE)"
+    url: "https://www.ine.es"
+    source_type: api
+    category: poblacion
+    license: "INE - reutilización permitida con cita de la fuente"
+    access_mode: manual_download
+    refresh_frequency: anual
+    connector: ine
+    is_real_source: true
+    notes: >-
+      Población por provincia/municipio para normalizar tasas. El INE ofrece API
+      JSON (Tempus3) y CSV; el endpoint concreto de la serie a usar queda por
+      fijar, por eso se marca manual_download en el MVP.
+
+  - name: aemet_opendata
+    organization: "Agencia Estatal de Meteorología (AEMET)"
+    url: "https://opendata.aemet.es"
+    source_type: api
+    category: meteorologia
+    license: "AEMET OpenData - condiciones de uso de AEMET"
+    access_mode: api_key_required
+    refresh_frequency: diaria
+    connector: aemet
+    is_real_source: true
+    notes: >-
+      Temperatura, avisos meteorológicos y calor extremo. Requiere API key
+      gratuita (AEMET_API_KEY en .env). Sin clave, el conector queda desactivado.
+
+  - name: isciii_sivira
+    organization: "Instituto de Salud Carlos III (ISCIII) - SiVIRA"
+    url: "https://www.isciii.es"
+    source_type: html
+    category: salud
+    license: "ISCIII - condiciones de uso institucionales"
+    access_mode: pending_verification
+    refresh_frequency: semanal
+    connector: isciii_sivira
+    is_real_source: true
+    notes: >-
+      Vigilancia de infecciones respiratorias agudas (gripe, COVID-19, VRS).
+      Gran parte de la información se publica en informes; falta confirmar un
+      recurso estructurado abierto y estable. Sin OCR en el MVP.
+
+  - name: ministerio_sanidad
+    organization: "Ministerio de Sanidad"
+    url: "https://www.sanidad.gob.es"
+    source_type: html
+    category: salud
+    license: "Ministerio de Sanidad - condiciones institucionales"
+    access_mode: pending_verification
+    refresh_frequency: variable
+    connector: ministerio_sanidad
+    is_real_source: true
+    notes: >-
+      Boletines y datos de salud pública. Pendiente de localizar descargas
+      estructuradas abiertas y estables.
+
+  - name: calidad_aire_nacional
+    organization: "Ministerio para la Transición Ecológica / CCAA"
+    url: null
+    source_type: api
+    category: calidad_aire
+    license: "Variable por administración"
+    access_mode: pending_verification
+    refresh_frequency: horaria
+    connector: calidad_aire
+    is_real_source: true
+    notes: >-
+      Índices de calidad del aire por estación/provincia. Las series abiertas se
+      reparten entre el MITECO y las CCAA; falta fijar el endpoint a consumir.
+
+  - name: aguas_residuales
+    organization: "Programas de vigilancia en aguas residuales (SARS-CoV-2)"
+    url: null
+    source_type: csv
+    category: aguas_residuales
+    license: "Variable por programa/CCAA"
+    access_mode: pending_verification
+    refresh_frequency: semanal
+    connector: aguas_residuales
+    is_real_source: true
+    notes: >-
+      Carga viral en aguas residuales como señal temprana. Disponibilidad y
+      formato abierto variables; pendiente de verificación.
+
+  - name: boe_datos_abiertos
+    organization: "Boletín Oficial del Estado (BOE)"
+    url: "https://www.boe.es/datosabiertos/"
+    source_type: api
+    category: boletin
+    license: "BOE - datos abiertos"
+    access_mode: pending_verification
+    refresh_frequency: diaria
+    connector: boe
+    is_real_source: true
+    notes: >-
+      Disposiciones oficiales que pueden contener avisos de salud pública. Uso
+      como señal contextual, no como indicador epidemiológico directo.
+
+  - name: rss_institucional
+    organization: "Organismos públicos (varios)"
+    url: null
+    source_type: rss
+    category: rss
+    license: "Cada organismo"
+    access_mode: pending_verification
+    refresh_frequency: diaria
+    connector: rss_institucional
+    is_real_source: true
+    notes: >-
+      Feeds RSS/Atom de Sanidad, consejerías, protección civil y AEMET. Las URLs
+      concretas deben verificarse antes de activarse (cambiar a 'operative' y
+      añadir 'url'). No se usa prensa generalista.
+
+# Catálogo por comunidad autónoma. Se incluyen los portales de datos abiertos
+# cuyo dominio se conoce con seguridad (estado operative a nivel de portal); la
+# ingesta automática de sus datasets concretos queda como trabajo futuro
+# (manual_download). Donde no hay certeza de URL, pending_verification + url null.
+autonomous_communities:
+  - name: andalucia_datos_abiertos
+    autonomous_community: "Andalucía"
+    organization: "Junta de Andalucía - Portal de datos abiertos"
+    url: "https://www.juntadeandalucia.es/datosabiertos"
+    source_type: html
+    category: salud
+    license: "Junta de Andalucía"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: aragon_opendata
+    autonomous_community: "Aragón"
+    organization: "Gobierno de Aragón - Aragón Open Data"
+    url: "https://opendata.aragon.es"
+    source_type: api
+    category: salud
+    license: "Aragón Open Data"
+    access_mode: manual_download
+    notes: "Portal con API. Datasets sanitarios concretos a verificar."
+
+  - name: asturias_salud
+    autonomous_community: "Asturias"
+    organization: "Principado de Asturias - Consejería de Salud"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Fuente de salud pública pendiente de verificación de URL/licencia."
+
+  - name: baleares_salud
+    autonomous_community: "Baleares"
+    organization: "Govern de les Illes Balears - Salut"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: canarias_datos
+    autonomous_community: "Canarias"
+    organization: "Gobierno de Canarias - Datos Abiertos"
+    url: "https://datos.canarias.es"
+    source_type: html
+    category: salud
+    license: "Gobierno de Canarias"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: cantabria_salud
+    autonomous_community: "Cantabria"
+    organization: "Gobierno de Cantabria - Salud"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: clm_salud
+    autonomous_community: "Castilla-La Mancha"
+    organization: "Junta de Comunidades de Castilla-La Mancha - Sanidad"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: cyl_datos_abiertos
+    autonomous_community: "Castilla y León"
+    organization: "Junta de Castilla y León - Datos Abiertos"
+    url: "https://datosabiertos.jcyl.es"
+    source_type: api
+    category: salud
+    license: "Junta de Castilla y León"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: cataluna_analisi
+    autonomous_community: "Cataluña"
+    organization: "Generalitat de Catalunya - Dades obertes (analisi.transparenciacatalunya.cat)"
+    url: "https://analisi.transparenciacatalunya.cat"
+    source_type: api
+    category: salud
+    license: "Generalitat de Catalunya"
+    access_mode: manual_download
+    notes: >-
+      Portal Socrata con datasets de salud (vigilancia, urgencias). Ingesta
+      automática vía API Socrata como trabajo futuro.
+
+  - name: gva_dades_obertes
+    autonomous_community: "Comunidad Valenciana"
+    organization: "Generalitat Valenciana - Dades Obertes"
+    url: "https://dadesobertes.gva.es"
+    source_type: api
+    category: salud
+    license: "Generalitat Valenciana"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: extremadura_salud
+    autonomous_community: "Extremadura"
+    organization: "Junta de Extremadura - Sanidad"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: galicia_abertos
+    autonomous_community: "Galicia"
+    organization: "Xunta de Galicia - Abertos"
+    url: "https://abertos.xunta.gal"
+    source_type: api
+    category: salud
+    license: "Xunta de Galicia"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: madrid_datos
+    autonomous_community: "Madrid"
+    organization: "Comunidad de Madrid - Datos Abiertos"
+    url: "https://datos.comunidad.madrid"
+    source_type: api
+    category: salud
+    license: "Comunidad de Madrid"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: murcia_salud
+    autonomous_community: "Murcia"
+    organization: "Región de Murcia - Salud"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: navarra_gobierno_abierto
+    autonomous_community: "Navarra"
+    organization: "Gobierno de Navarra - Gobierno Abierto / Datos"
+    url: "https://gobiernoabierto.navarra.es"
+    source_type: api
+    category: salud
+    license: "Gobierno de Navarra"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: euskadi_opendata
+    autonomous_community: "País Vasco"
+    organization: "Gobierno Vasco - Open Data Euskadi"
+    url: "https://opendata.euskadi.eus"
+    source_type: api
+    category: salud
+    license: "Open Data Euskadi"
+    access_mode: manual_download
+    notes: "Portal de datos abiertos. Datasets sanitarios a verificar."
+
+  - name: rioja_salud
+    autonomous_community: "La Rioja"
+    organization: "Gobierno de La Rioja - Salud"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: ceuta_salud
+    autonomous_community: "Ceuta"
+    organization: "Ciudad Autónoma de Ceuta - Sanidad"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."
+
+  - name: melilla_salud
+    autonomous_community: "Melilla"
+    organization: "Ciudad Autónoma de Melilla - Sanidad"
+    url: null
+    source_type: html
+    category: salud
+    license: null
+    access_mode: pending_verification
+    notes: "Pendiente de verificación."

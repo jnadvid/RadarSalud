@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Simulación{% endblock %}
+{% block content %}
+<h1>Modo simulación</h1>
+
+<div class="sim-warning">
+  ⚠️ Los datos generados en este modo son <strong>simulados</strong> y
+  <strong>no representan una situación sanitaria real</strong>. No afectan a los
+  datos reales y pueden limpiarse en cualquier momento.
+</div>
+
+<section class="panel">
+  <h2>Lanzar simulación a medida</h2>
+  <form id="sim-form" class="sim-form">
+    <label>Evento
+      <select name="event">
+        <option value="gripe">Gripe</option>
+        <option value="covid">COVID-19</option>
+        <option value="vrs">VRS</option>
+        <option value="gastroenteritis">Gastroenteritis</option>
+        <option value="golpe_calor">Golpe de calor</option>
+        <option value="multi_evento">Multi-evento</option>
+      </select>
+    </label>
+    <label>Provincia
+      <input type="text" name="province" placeholder="Ej. Madrid" list="provincias">
+    </label>
+    <label>Comunidad autónoma
+      <input type="text" name="autonomous_community" placeholder="Ej. Madrid">
+    </label>
+    <label>Severidad
+      <select name="severity">
+        <option value="low">Baja</option>
+        <option value="medium" selected>Media</option>
+        <option value="high">Alta</option>
+        <option value="critical">Crítica</option>
+      </select>
+    </label>
+    <label>Duración (días)
+      <input type="number" name="days" value="14" min="1" max="120">
+    </label>
+    <label>Multiplicador de incidencia
+      <input type="number" name="multiplier" value="2.5" min="0.5" max="20" step="0.1">
+    </label>
+    <div class="sim-actions">
+      <button type="submit" class="btn primary" id="btn-launch">🚀 Lanzar simulación</button>
+      <button type="button" class="btn danger" id="btn-clear">🧹 Limpiar simulaciones</button>
+    </div>
+  </form>
+  <div id="sim-result" class="sim-result"></div>
+</section>
+
+<section class="panel">
+  <h2>Escenarios predefinidos</h2>
+  <div class="presets">
+    {% for p in presets %}
+    <div class="preset-card">
+      <h3>{{ p.label }}</h3>
+      <p>{{ p.description }}</p>
+      <small>{{ p.event }} · {{ p.province or p.autonomous_community or 'varias' }} ·
+        sev. {{ p.severity }} · {{ p.days }} días · x{{ p.multiplier }}</small>
+      <button class="btn preset-btn" data-preset="{{ p.name }}">Lanzar preset</button>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Simulaciones recientes</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Nombre</th><th>Escenario</th><th>Estado</th><th>Creada</th></tr></thead>
+    <tbody id="sim-list">
+      {% for s in simulations %}
+      <tr>
+        <td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.scenario_type }}</td>
+        <td><span class="badge {{ s.status }}">{{ s.status }}</span></td>
+        <td>{{ s.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<datalist id="provincias">
+  {% for prov in ["Madrid","Barcelona","Valencia","Sevilla","Zaragoza","Málaga","Murcia","Bizkaia","A Coruña","Alicante"] %}
+  <option value="{{ prov }}">{% endfor %}
+</datalist>
+{% endblock %}
+{% block footer %}separación total real / simulación{% endblock %}

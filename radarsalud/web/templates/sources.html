@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Fuentes{% endblock %}
+{% block content %}
+<h1>Catálogo de fuentes</h1>
+<p class="lead">
+  Fuentes abiertas catalogadas. El estado distingue claramente lo
+  <strong>operativo</strong> de las <strong>plantillas</strong> y lo
+  <strong>pendiente de verificación</strong>. No se inventan URLs.
+</p>
+
+<div class="legend-states">
+  <span class="badge open">open</span> accesible ·
+  <span class="badge api_key_required">api_key_required</span> requiere clave ·
+  <span class="badge manual_download">manual_download</span> descarga manual ·
+  <span class="badge pending_verification">pending_verification</span> sin verificar
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Fuente</th><th>Organización</th><th>Categoría</th><th>Tipo</th>
+      <th>Estado</th><th>Habilitada</th><th>Licencia</th><th>URL</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sources %}
+    <tr>
+      <td><strong>{{ s.name }}</strong>
+        {% if not s.is_real_source %}<span class="badge sim">no real</span>{% endif %}
+      </td>
+      <td>{{ s.organization or '—' }}</td>
+      <td>{{ s.category }}</td>
+      <td>{{ s.source_type }}</td>
+      <td><span class="badge {{ s.access_mode }}">{{ s.access_mode }}</span></td>
+      <td>{{ '✅' if s.enabled else '—' }}</td>
+      <td>{{ s.license or '—' }}</td>
+      <td>{% if s.url %}<a href="{{ s.url }}" target="_blank" rel="noopener">↗</a>{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+{% block footer %}{{ sources|length }} fuentes{% endblock %}

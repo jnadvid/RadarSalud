@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Entorno
+.env
+
+# Base de datos local y artefactos de datos
+data/radarsalud.sqlite
+data/radarsalud.sqlite-journal
+data/raw/*
+data/processed/*
+data/imports/*
+data/simulations/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/imports/.gitkeep
+!data/simulations/.gitkeep
+
+# Mapas generados
+*.map.html
+radarsalud/web/static/generated_map.html
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editores
+.vscode/
+.idea/
+.DS_Store

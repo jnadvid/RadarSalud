@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Panel{% endblock %}
+{% block content %}
+<h1>Panel principal</h1>
+<p class="lead">
+  Estado de la plataforma. Los datos <strong>reales</strong> y los de
+  <strong>simulación</strong> se contabilizan y muestran por separado.
+</p>
+
+<section class="cards">
+  <div class="card">
+    <div class="card-num">{{ counts.sources }}</div>
+    <div class="card-label">Fuentes catalogadas</div>
+  </div>
+  <div class="card real">
+    <div class="card-num">{{ counts.observations_real }}</div>
+    <div class="card-label">Observaciones reales / importadas</div>
+  </div>
+  <div class="card sim">
+    <div class="card-num">{{ counts.observations_sim }}</div>
+    <div class="card-label">Observaciones simuladas</div>
+  </div>
+  <div class="card real">
+    <div class="card-num">{{ counts.alerts_real }}</div>
+    <div class="card-label">Alertas reales</div>
+  </div>
+  <div class="card sim">
+    <div class="card-num">{{ counts.alerts_sim }}</div>
+    <div class="card-label">Alertas simuladas</div>
+  </div>
+  <div class="card">
+    <div class="card-num">{{ counts.simulations }}</div>
+    <div class="card-label">Simulaciones registradas</div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Accesos rápidos</h2>
+  <div class="quick">
+    <a class="btn" href="/map?mode=all">🗺️ Ver mapa (todo)</a>
+    <a class="btn" href="/map?mode=real">🗺️ Mapa solo real</a>
+    <a class="btn" href="/map?mode=simulation">🗺️ Mapa solo simulación</a>
+    <a class="btn primary" href="/simulation">🧪 Modo simulación</a>
+    <a class="btn" href="/sources">📚 Fuentes</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Cómo empezar</h2>
+  <ol>
+    <li><code>radarsalud init-db</code> — crea la base y siembra el catálogo de fuentes.</li>
+    <li><code>radarsalud ingest-all</code> — intenta ingerir datos reales abiertos.</li>
+    <li><code>radarsalud import-csv fichero.csv</code> — importa datos reales agregados.</li>
+    <li><code>radarsalud analyze --mode real</code> — detecta anomalías reales.</li>
+    <li>Pulsa <a href="/simulation">Simulación</a> para probar el sistema con brotes ficticios.</li>
+  </ol>
+</section>
+{% endblock %}
+{% block footer %}v{{ version }}{% endblock %}

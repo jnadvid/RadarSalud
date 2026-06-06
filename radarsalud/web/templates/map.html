@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Mapa{% endblock %}
+{% block content %}
+<h1>Mapa de España</h1>
+<p class="lead">
+  Eventos sanitarios por provincia. Color según severidad; los marcadores con
+  borde morado discontinuo y etiqueta <strong>[SIM]</strong> son de simulación.
+</p>
+
+<div class="map-toolbar">
+  <span>Mostrar:</span>
+  <a class="chip {% if mode == 'real' %}active{% endif %}" href="/map?mode=real">Solo reales</a>
+  <a class="chip {% if mode == 'simulation' %}active{% endif %}" href="/map?mode=simulation">Solo simulación</a>
+  <a class="chip {% if mode == 'all' %}active{% endif %}" href="/map?mode=all">Reales + simulación</a>
+  <a class="chip" href="/api/v1/maps/alerts.geojson?mode={{ mode }}" target="_blank">GeoJSON ↗</a>
+</div>
+
+<div class="map-frame">
+  <iframe src="/map/render?mode={{ mode }}" title="Mapa RadarSalud" loading="lazy"></iframe>
+</div>
+{% endblock %}
+{% block footer %}modo: {{ mode }}{% endblock %}

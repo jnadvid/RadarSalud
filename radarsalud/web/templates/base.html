@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}RadarSalud{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🛰️</span>
+      <strong>RadarSalud</strong>
+      <span class="tag">vigilancia poblacional · datos abiertos</span>
+    </div>
+    <nav>
+      <a href="/">Panel</a>
+      <a href="/map">Mapa</a>
+      <a href="/simulation">Simulación</a>
+      <a href="/sources">Fuentes</a>
+      <a href="/docs">API</a>
+    </nav>
+  </header>
+
+  <div class="disclaimer">
+    Herramienta de vigilancia poblacional con datos abiertos agregados.
+    <strong>No usa datos personales · no diagnostica · no sustituye a profesionales sanitarios.</strong>
+  </div>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    RadarSalud · open source · {% block footer %}{% endblock %}
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>
