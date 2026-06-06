@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Alertas{% endblock %}
+{% block content %}
+<h1>Alertas</h1>
+<p class="lead">
+  Anomalías detectadas sobre datos abiertos agregados. Requieren validación por
+  salud pública. Las de <strong>simulación</strong> están marcadas aparte.
+</p>
+
+<div class="sources-toolbar">
+  <label>Modo
+    <select id="f-mode">
+      <option value="all">Todos</option>
+      <option value="real" selected>Reales</option>
+      <option value="simulation">Simulación</option>
+    </select>
+  </label>
+  <label>Severidad
+    <select id="f-sev">
+      <option value="">Todas</option>
+      <option value="critical">Crítica</option>
+      <option value="high">Alta</option>
+      <option value="medium">Media</option>
+      <option value="low">Baja</option>
+    </select>
+  </label>
+  <label>Estado
+    <select id="f-status">
+      <option value="">Todos</option>
+      <option value="open" selected>Abiertas</option>
+      <option value="reviewed">Revisadas</option>
+      <option value="dismissed">Descartadas</option>
+    </select>
+  </label>
+  <a class="btn" id="export-alerts" href="/api/v1/alerts.csv?data_mode=real">⬇️ Exportar CSV</a>
+  <span id="alerts-count" class="check-result"></span>
+</div>
+
+<table class="table" id="alerts-table">
+  <thead>
+    <tr><th>Sev.</th><th>Modo</th><th>Evento</th><th>Provincia</th><th>Fecha</th>
+      <th>Obs.</th><th>Baseline</th><th>Explicación</th><th>Estado</th><th>Acciones</th></tr>
+  </thead>
+  <tbody id="alerts-body"></tbody>
+</table>
+<script>window.RADARSALUD_ALERTS = true;</script>
+{% endblock %}
+{% block footer %}triaje de alertas{% endblock %}

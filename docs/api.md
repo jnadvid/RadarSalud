@@ -17,6 +17,30 @@ Arranca el servidor con `radarsalud serve` (o `make serve`).
 | GET | `/map/render?mode=...` | HTML del mapa Folium (embebible). |
 | GET | `/simulation` | Página de simulación (presets y botones). |
 | GET | `/sources` | Página con el catálogo de fuentes. |
+| GET | `/alerts` | Página de triaje de alertas. |
+| GET | `/province?name=…` | Detalle de provincia (serie observada vs. esperada). |
+| GET | `/import` | Página de importación de CSV. |
+
+## Panel, pipeline y scheduler
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/dashboard/summary` | Indicadores: observaciones, alertas, última fecha, severidades. |
+| GET | `/api/v1/dashboard/mortality_timeseries` | Serie nacional de mortalidad observada vs. esperada. |
+| GET | `/api/v1/dashboard/top_excess?limit=10` | Provincias con mayor exceso de mortalidad. |
+| GET | `/api/v1/dashboard/province_timeseries?province=…` | Serie de una provincia. |
+| POST | `/api/v1/pipeline/refresh` | Lanza ingesta real + análisis en segundo plano. `{include_heavy, include_light}` |
+| GET | `/api/v1/pipeline/status` | Estado del pipeline (paso, mensaje, resultado). |
+| GET | `/api/v1/scheduler/status` | Estado de la actualización automática. |
+| POST | `/api/v1/scheduler/start` | Activa el scheduler. `{hours, include_heavy}` |
+| POST | `/api/v1/scheduler/stop` | Detiene el scheduler. |
+
+## Exportación
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/observations.csv` | Observaciones en CSV (`data_mode`, `province`, `health_event`). |
+| GET | `/api/v1/alerts.csv` | Alertas en CSV (`data_mode`). |
 
 ```bash
 curl http://127.0.0.1:8000/health

@@ -85,6 +85,19 @@ El sistema distingue siempre tres tipos de dato (`data_mode`):
 
 ---
 
+## Fase 10 — Producto de vigilancia (v0.2, hecho)
+
+- [x] Conector real ISCIII MoMo: mortalidad observada/esperada por provincia.
+- [x] Capa "Datos de salud" en el mapa (último valor por provincia, exceso).
+- [x] Panel en vivo: botón "Actualizar datos reales", pipeline en segundo plano.
+- [x] Gráficas (Chart.js): mortalidad nacional, top exceso, alertas por severidad.
+- [x] Scheduler (APScheduler) de actualización automática + control desde la UI.
+- [x] Página de triaje de alertas (`/alerts`) con cambio de estado.
+- [x] Detalle por provincia (`/province`) con serie observada vs. esperada.
+- [x] Importación de CSV desde el navegador (`/import`).
+- [x] Exportación CSV de observaciones y alertas.
+- [x] Comprobación de fuentes + toggle de activación + capa de cobertura.
+
 ## Trabajo futuro (post-MVP)
 
 - Programación de ingestas con APScheduler (opcional ya incluido como dependencia extra).

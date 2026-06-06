@@ -43,8 +43,22 @@ El panel principal (`/`) es una herramienta de monitorización lista para usar:
   - **Top provincias por exceso** de mortalidad.
   - **Alertas por severidad**.
 - **Indicadores**: observaciones reales, última fecha de datos, alertas, fuentes.
+- **⏱️ Actualización automática (scheduler)**: interruptor para reingerir y
+  reanalizar cada N horas (APScheduler). También `RADARSALUD_SCHEDULER_ENABLED`
+  o `radarsalud serve --auto-refresh --refresh-hours 12`.
 
 Así, abriendo el navegador y pulsando un botón, ya ves datos reales analizados.
+
+### Otras páginas y utilidades
+
+- **`/alerts` — Triaje de alertas**: tabla filtrable (modo, severidad, estado)
+  con botones para marcar *revisada* / *descartada* / *reabrir*.
+- **`/province?name=…` — Detalle por provincia**: serie observada vs. esperada,
+  con drilldown desde el mapa y las alertas.
+- **`/import` — Importar CSV** desde el navegador (con CSV de ejemplo descargable)
+  y validación de columnas y de ausencia de datos personales.
+- **Exportación** para analistas: `GET /api/v1/observations.csv` y
+  `GET /api/v1/alerts.csv` (y GeoJSON de alertas).
 
 ## 🔑 Los tres modos de dato
 

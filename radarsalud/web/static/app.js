@@ -147,10 +147,8 @@
   }
 
   // ----------------------------------------------------------------
-  //  Panel principal: KPIs en vivo, gráficas y pipeline de datos reales.
+  //  Helpers compartidos por las páginas dinámicas.
   // ----------------------------------------------------------------
-  if (!window.RADARSALUD_DASHBOARD) return;
-
   async function getJSON(url) {
     const r = await fetch(url);
     return r.ok ? r.json() : null;
@@ -159,7 +157,6 @@
     const el = document.getElementById(id);
     if (el) el.textContent = v;
   }
-
   const charts = {};
   function upsertChart(id, config) {
     if (typeof Chart === "undefined") return;
@@ -168,6 +165,18 @@
     if (charts[id]) { charts[id].destroy(); }
     charts[id] = new Chart(ctx, config);
   }
+  function esc(x) {
+    const d = document.createElement("div");
+    d.textContent = x == null ? "" : String(x);
+    return d.innerHTML;
+  }
+
+  // ----------------------------------------------------------------
+  //  Panel principal: KPIs en vivo, gráficas, pipeline y scheduler.
+  // ----------------------------------------------------------------
+  if (window.RADARSALUD_DASHBOARD) initDashboard();
+
+  function initDashboard() {
 
   async function loadDashboard() {
     const s = await getJSON("/api/v1/dashboard/summary");
@@ -284,9 +293,41 @@
     });
   }
 
+  // Scheduler (actualización automática) ---------------------------
+  async function loadScheduler() {
+    const st = await getJSON("/api/v1/scheduler/status");
+    const box = document.getElementById("sched-status");
+    const toggle = document.getElementById("sched-toggle");
+    if (!box || !st) return;
+    if (toggle) toggle.checked = st.enabled;
+    box.textContent = st.enabled
+      ? "Automático ACTIVO cada " + st.hours + " h" +
+        (st.next_run ? " · próxima: " + new Date(st.next_run).toLocaleTimeString() : "")
+      : "Automático desactivado";
+  }
+  const schedToggle = document.getElementById("sched-toggle");
+  if (schedToggle) {
+    schedToggle.addEventListener("change", async function () {
+      const hours = parseFloat(document.getElementById("sched-hours").value) || 12;
+      const includeHeavy = document.getElementById("heavy")
+        ? document.getElementById("heavy").checked : true;
+      if (schedToggle.checked) {
+        await fetch("/api/v1/scheduler/start", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hours: hours, include_heavy: includeHeavy }),
+        });
+      } else {
+        await fetch("/api/v1/scheduler/stop", { method: "POST" });
+      }
+      loadScheduler();
+    });
+  }
+
   loadDashboard();
+  loadScheduler();
   // Refresco en vivo de las gráficas cada 30 s (no relanza el pipeline).
   setInterval(loadDashboard, 30000);
+  setInterval(loadScheduler, 30000);
   // Si al cargar hay un pipeline en marcha (lanzado antes), engancha el sondeo.
   getJSON("/api/v1/pipeline/status").then((st) => {
     if (st && st.running) {
@@ -295,4 +336,163 @@
       renderStatus(st);
     }
   });
+
+  }  // fin initDashboard
+
+  // ----------------------------------------------------------------
+  //  Página de alertas: tabla con filtros y triaje.
+  // ----------------------------------------------------------------
+  if (window.RADARSALUD_ALERTS) initAlerts();
+
+  function initAlerts() {
+    const sevColors = { low: "#2ecc71", medium: "#f1c40f", high: "#e67e22", critical: "#e74c3c" };
+    const body = document.getElementById("alerts-body");
+    const fMode = document.getElementById("f-mode");
+    const fSev = document.getElementById("f-sev");
+    const fStatus = document.getElementById("f-status");
+
+    async function load() {
+      const params = new URLSearchParams();
+      if (fMode.value) params.set("data_mode", fMode.value);
+      if (fSev.value) params.set("severity", fSev.value);
+      if (fStatus.value) params.set("status", fStatus.value);
+      const list = (await getJSON("/api/v1/alerts?" + params.toString())) || [];
+      document.getElementById("alerts-count").textContent = list.length + " alertas";
+      document.getElementById("export-alerts").href =
+        "/api/v1/alerts.csv?data_mode=" + (fMode.value || "all");
+      body.innerHTML = "";
+      list.forEach((a) => {
+        const tr = document.createElement("tr");
+        const sim = a.data_mode === "simulation";
+        tr.innerHTML =
+          '<td><span class="dot" style="background:' + (sevColors[a.severity] || "#999") +
+            '"></span>' + esc(a.severity) + "</td>" +
+          "<td>" + (sim ? '<span class="badge sim">SIM</span>' : "real") + "</td>" +
+          "<td>" + esc(a.health_event) + "</td>" +
+          '<td><a href="/province?name=' + encodeURIComponent(a.province || "") + '">' +
+            esc(a.province) + "</a></td>" +
+          "<td>" + esc((a.observed_at || "").slice(0, 10)) + "</td>" +
+          "<td>" + esc(a.observed_value) + "</td>" +
+          "<td>" + esc(a.baseline_value) + "</td>" +
+          '<td class="small">' + esc(a.explanation) + "</td>" +
+          '<td><span class="badge ' + esc(a.status) + '">' + esc(a.status) + "</span></td>" +
+          "<td></td>";
+        const actions = tr.lastChild;
+        ["reviewed", "dismissed", "open"].forEach((st) => {
+          if (st === a.status) return;
+          const b = document.createElement("button");
+          b.className = "btn small-btn";
+          b.textContent = { reviewed: "Revisar", dismissed: "Descartar", open: "Reabrir" }[st];
+          b.onclick = async () => {
+            await fetch("/api/v1/alerts/" + a.id + "/status", {
+              method: "PATCH", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: st }),
+            });
+            load();
+          };
+          actions.appendChild(b);
+        });
+        body.appendChild(tr);
+      });
+    }
+    [fMode, fSev, fStatus].forEach((el) => el.addEventListener("change", load));
+    load();
+    setInterval(load, 30000);
+  }
+
+  // ----------------------------------------------------------------
+  //  Página de provincia: serie observada vs. esperada.
+  // ----------------------------------------------------------------
+  if (window.RADARSALUD_PROVINCE) initProvince();
+
+  function initProvince() {
+    const input = document.getElementById("prov-input");
+    async function load() {
+      const prov = input.value.trim();
+      document.getElementById("prov-export").href =
+        "/api/v1/observations.csv?data_mode=real&province=" + encodeURIComponent(prov);
+      const ts = await getJSON("/api/v1/dashboard/province_timeseries?province=" +
+        encodeURIComponent(prov));
+      const empty = document.getElementById("prov-empty");
+      const summ = document.getElementById("prov-summary");
+      if (!ts || !ts.labels.length) {
+        if (empty) empty.style.display = "block";
+        if (summ) summ.textContent = "";
+        upsertChart("chart-province", { type: "line", data: { labels: [], datasets: [] } });
+        return;
+      }
+      if (empty) empty.style.display = "none";
+      if (summ) {
+        summ.textContent = ts.latest_excess_pct != null
+          ? "Exceso último dato: " + ts.latest_excess_pct + "%" : "";
+      }
+      upsertChart("chart-province", {
+        type: "line",
+        data: {
+          labels: ts.labels,
+          datasets: [
+            { label: "Observada", data: ts.observed, borderColor: "#2980b9",
+              backgroundColor: "rgba(41,128,185,.15)", fill: true, tension: 0.25, pointRadius: 0 },
+            { label: "Esperada", data: ts.expected, borderColor: "#7f8c8d",
+              borderDash: [6, 4], fill: false, tension: 0.25, pointRadius: 0 },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { x: { ticks: { maxTicksLimit: 10 } } } },
+      });
+    }
+    document.getElementById("prov-load").addEventListener("click", load);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+    load();
+  }
+
+  // ----------------------------------------------------------------
+  //  Página de importación CSV.
+  // ----------------------------------------------------------------
+  if (window.RADARSALUD_IMPORT) initImport();
+
+  function initImport() {
+    const form = document.getElementById("import-form");
+    const out = document.getElementById("import-result");
+    const example =
+      "observed_at,autonomous_community,province,municipality,signal_type,health_event,pathogen,value,unit,source_name\n" +
+      "2026-01-07,Madrid,Madrid,,incidencia,gripe,Influenza,42,tasa_100k,ISCIII\n" +
+      "2026-01-14,Madrid,Madrid,,incidencia,gripe,Influenza,75,tasa_100k,ISCIII\n" +
+      "2026-01-21,Madrid,Madrid,,incidencia,gripe,Influenza,160,tasa_100k,ISCIII\n";
+    const dl = document.getElementById("dl-example");
+    if (dl) {
+      dl.addEventListener("click", (e) => {
+        e.preventDefault();
+        const blob = new Blob([example], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "ejemplo_radarsalud.csv";
+        a.click();
+      });
+    }
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const file = document.getElementById("csv-file").files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      const sn = document.getElementById("csv-source").value;
+      if (sn) fd.append("source_name", sn);
+      out.style.color = "#20303c";
+      out.textContent = "Importando…";
+      const res = await fetch("/api/v1/uploads/csv", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        out.style.color = "#0a6b45";
+        out.innerHTML = "✅ Importadas " + data.inserted + " de " + data.rows_total +
+          " filas. <a href='/map?mode=real'>Ver en el mapa</a> · " +
+          "<a href='/'>analizar en el panel</a>.";
+      } else {
+        out.style.color = "#a12525";
+        const errs = (data.detail && data.detail.errors) || [JSON.stringify(data.detail || data)];
+        out.innerHTML = "❌ Rechazado:<br>" + errs.slice(0, 10).map(esc).join("<br>");
+      }
+    });
+  }
 })();

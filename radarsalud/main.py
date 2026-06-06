@@ -21,11 +21,12 @@ from radarsalud.api import (
     routes_simulation,
     routes_sources,
 )
+from radarsalud.config import get_settings
 from radarsalud.database import get_session, init_db
 from radarsalud.models import Alert, Observation, Simulation, Source
 from radarsalud.services import map_service
 from radarsalud.simulation.presets import list_presets
-from radarsalud.utils.logging import configure_logging
+from radarsalud.utils.logging import configure_logging, get_logger
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
 templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
@@ -50,6 +51,16 @@ def create_app() -> FastAPI:
 
     # Crea la base si no existe (no siembra catálogo; eso lo hace init-db).
     init_db()
+
+    # Scheduler opcional: arranca si está habilitado por configuración.
+    settings = get_settings()
+    if settings.scheduler_enabled:
+        from radarsalud.services import scheduler_service
+
+        get_logger(__name__).info("Arrancando scheduler automático al inicio")
+        scheduler_service.start(
+            hours=settings.scheduler_hours, include_heavy=settings.scheduler_include_heavy
+        )
 
     # Routers de la API
     app.include_router(routes_sources.router)
@@ -114,8 +125,23 @@ def create_app() -> FastAPI:
 
     @app.get("/sources", response_class=HTMLResponse, tags=["web"])
     def sources_page(request: Request, session: Session = Depends(get_session)):
-        sources = session.scalars(select(Source).order_by(Source.category, Source.name)).all()
+        sources = session.scalars(
+            select(Source).where(~Source.name.like("dataset::%"))
+            .order_by(Source.category, Source.name)
+        ).all()
         return templates.TemplateResponse(request, "sources.html", {"sources": sources})
+
+    @app.get("/alerts", response_class=HTMLResponse, tags=["web"])
+    def alerts_page(request: Request):
+        return templates.TemplateResponse(request, "alerts.html", {})
+
+    @app.get("/province", response_class=HTMLResponse, tags=["web"])
+    def province_page(request: Request, name: str = Query(default="Madrid")):
+        return templates.TemplateResponse(request, "province.html", {"province": name})
+
+    @app.get("/import", response_class=HTMLResponse, tags=["web"])
+    def import_page(request: Request):
+        return templates.TemplateResponse(request, "import.html", {})
 
     return app
 

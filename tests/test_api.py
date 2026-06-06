@@ -21,8 +21,52 @@ def test_health(client):
 
 
 def test_web_pages(client):
-    for path in ["/", "/map", "/simulation", "/sources"]:
+    for path in ["/", "/map", "/simulation", "/sources", "/alerts",
+                 "/province?name=Madrid", "/import"]:
         assert client.get(path).status_code == 200
+
+
+def test_exports_csv(client):
+    r = client.get("/api/v1/observations.csv?data_mode=real")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "observed_at" in r.text.splitlines()[0]
+    r2 = client.get("/api/v1/alerts.csv")
+    assert r2.status_code == 200
+    assert "severity" in r2.text.splitlines()[0]
+
+
+def test_province_timeseries_endpoint(client):
+    r = client.get("/api/v1/dashboard/province_timeseries?province=Madrid")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["province"] == "Madrid"
+    assert "observed" in body and "expected" in body
+
+
+def test_scheduler_start_status_stop(client, monkeypatch):
+    # Evita que el job real dispare el pipeline durante el test.
+    monkeypatch.setattr("radarsalud.services.scheduler_service._job", lambda: None)
+    r = client.post("/api/v1/scheduler/start", json={"hours": 24, "include_heavy": False})
+    assert r.status_code == 200 and r.json()["enabled"] is True
+    s = client.get("/api/v1/scheduler/status").json()
+    assert s["enabled"] is True and s["hours"] == 24
+    r2 = client.post("/api/v1/scheduler/stop")
+    assert r2.json()["enabled"] is False
+
+
+def test_alert_triage_roundtrip(client):
+    # Crea alertas vía simulación, cambia el estado de una y limpia.
+    client.post("/api/v1/simulation/run", json={
+        "event": "gripe", "province": "Madrid", "severity": "high",
+        "days": 14, "multiplier": 3.0,
+    })
+    alerts = client.get("/api/v1/alerts?data_mode=simulation").json()
+    assert alerts
+    aid = alerts[0]["id"]
+    r = client.patch(f"/api/v1/alerts/{aid}/status", json={"status": "reviewed"})
+    assert r.status_code == 200 and r.json()["status"] == "reviewed"
+    client.post("/api/v1/simulation/clear")
 
 
 def test_sources_endpoint(client):

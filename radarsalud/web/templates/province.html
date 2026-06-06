@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · {{ province }}{% endblock %}
+{% block content %}
+<h1>Detalle de provincia</h1>
+<div class="sources-toolbar">
+  <label>Provincia
+    <input type="text" id="prov-input" value="{{ province }}" list="provincias">
+  </label>
+  <button class="btn primary" id="prov-load">Ver</button>
+  <a class="btn" id="prov-export" href="/api/v1/observations.csv?data_mode=real&province={{ province }}">⬇️ CSV</a>
+  <span id="prov-summary" class="check-result"></span>
+</div>
+
+<section class="panel">
+  <h2>📈 Mortalidad: observada vs. esperada</h2>
+  <div class="chart-box"><canvas id="chart-province"></canvas></div>
+  <p class="muted small" id="prov-empty" style="display:none">
+    Sin datos para esta provincia. Actualiza datos reales en el
+    <a href="/">panel</a> (ISCIII MoMo).
+  </p>
+</section>
+
+<datalist id="provincias">
+  {% for p in ["Madrid","Barcelona","Valencia","Sevilla","Zaragoza","Málaga","Murcia",
+               "Bizkaia","A Coruña","Alicante","Guadalajara","Teruel","Soria","Cádiz"] %}
+  <option value="{{ p }}">{% endfor %}
+</datalist>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>window.RADARSALUD_PROVINCE = "{{ province }}";</script>
+{% endblock %}
+{% block footer %}{{ province }}{% endblock %}

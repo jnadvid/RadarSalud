@@ -66,6 +66,18 @@ class Settings(BaseSettings):
         default="INFO", validation_alias=_alias("RADARSALUD_LOG_LEVEL", "log_level")
     )
 
+    # Scheduler (actualización automática de datos reales)
+    scheduler_enabled: bool = Field(
+        default=False, validation_alias=_alias("RADARSALUD_SCHEDULER_ENABLED", "scheduler_enabled")
+    )
+    scheduler_hours: float = Field(
+        default=12.0, validation_alias=_alias("RADARSALUD_SCHEDULER_HOURS", "scheduler_hours")
+    )
+    scheduler_include_heavy: bool = Field(
+        default=True,
+        validation_alias=_alias("RADARSALUD_SCHEDULER_INCLUDE_HEAVY", "scheduler_include_heavy"),
+    )
+
     # Rutas derivadas ----------------------------------------------------------
     @property
     def data_dir(self) -> Path:

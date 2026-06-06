@@ -1,12 +1,18 @@
 """Endpoints del panel: resúmenes, gráficas en tiempo real y pipeline."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from radarsalud.database import get_session
-from radarsalud.services import dashboard_service, pipeline_service
+from radarsalud.services import (
+    dashboard_service,
+    export_service,
+    pipeline_service,
+    scheduler_service,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["dashboard"])
 
@@ -44,3 +50,61 @@ def pipeline_refresh(payload: RefreshRequest | None = None):
 @router.get("/pipeline/status")
 def pipeline_status():
     return pipeline_service.get_state()
+
+
+@router.get("/dashboard/province_timeseries")
+def province_timeseries(province: str, session: Session = Depends(get_session)):
+    return dashboard_service.province_timeseries(session, province)
+
+
+# --- Scheduler (actualización automática) -----------------------------------
+class SchedulerRequest(BaseModel):
+    hours: float = 12.0
+    include_heavy: bool = True
+
+
+@router.get("/scheduler/status")
+def scheduler_status():
+    return scheduler_service.status()
+
+
+@router.post("/scheduler/start")
+def scheduler_start(payload: SchedulerRequest | None = None):
+    payload = payload or SchedulerRequest()
+    return scheduler_service.start(hours=payload.hours, include_heavy=payload.include_heavy)
+
+
+@router.post("/scheduler/stop")
+def scheduler_stop():
+    return scheduler_service.stop()
+
+
+# --- Exportación de datos ----------------------------------------------------
+@router.get("/observations.csv", response_class=PlainTextResponse)
+def export_observations(
+    data_mode: str | None = Query(default=None),
+    province: str | None = None,
+    health_event: str | None = None,
+    session: Session = Depends(get_session),
+):
+    csv_text = export_service.observations_csv(
+        session, data_mode=data_mode, province=province, health_event=health_event
+    )
+    return PlainTextResponse(
+        csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=observaciones.csv"},
+    )
+
+
+@router.get("/alerts.csv", response_class=PlainTextResponse)
+def export_alerts(
+    data_mode: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+):
+    csv_text = export_service.alerts_csv(session, data_mode=data_mode)
+    return PlainTextResponse(
+        csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=alertas.csv"},
+    )

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}RadarSalud · Importar CSV{% endblock %}
+{% block content %}
+<h1>Importar datos reales agregados (CSV)</h1>
+<p class="lead">
+  Carga datos abiertos agregados descargados manualmente (p. ej. gripe, COVID-19,
+  VRS por provincia). Se guardan como <strong>manual_import</strong>, separados de
+  la ingesta automática. <strong>No se admiten datos personales.</strong>
+</p>
+
+<section class="panel">
+  <h2>Columnas aceptadas</h2>
+  <p class="muted small">
+    <code>observed_at, autonomous_community, province, municipality, signal_type,
+    health_event, pathogen, value, unit, source_name</code>
+  </p>
+  <p class="muted small">
+    Se validan fechas, provincias, valores numéricos y eventos permitidos
+    (gripe, covid, vrs, gastroenteritis, golpe_calor, mortalidad…). Se rechazan
+    columnas o contenidos con aspecto de dato personal (DNI, email, teléfono…).
+  </p>
+
+  <form id="import-form" class="sim-form">
+    <label>Fichero CSV
+      <input type="file" name="file" id="csv-file" accept=".csv,text/csv" required>
+    </label>
+    <label>Nombre de fuente (opcional)
+      <input type="text" name="source_name" id="csv-source" placeholder="Ej. ISCIII informe semanal">
+    </label>
+    <div class="sim-actions">
+      <button type="submit" class="btn primary">⬆️ Importar CSV</button>
+      <a class="btn" id="dl-example" href="#">⬇️ Descargar ejemplo</a>
+    </div>
+  </form>
+  <div id="import-result" class="sim-result"></div>
+</section>
+<script>window.RADARSALUD_IMPORT = true;</script>
+{% endblock %}
+{% block footer %}importación manual{% endblock %}

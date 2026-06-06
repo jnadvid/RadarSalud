@@ -204,15 +204,41 @@ def serve(
     host: str | None = typer.Option(None, "--host"),
     port: int | None = typer.Option(None, "--port"),
     reload: bool = typer.Option(False, "--reload"),
+    auto_refresh: bool = typer.Option(
+        False, "--auto-refresh", help="Activar actualización automática de datos reales"
+    ),
+    refresh_hours: float = typer.Option(12.0, "--refresh-hours"),
 ) -> None:
     """Arranca el servidor FastAPI local."""
+    import os
+
     settings = get_settings()
+    if auto_refresh:
+        os.environ["RADARSALUD_SCHEDULER_ENABLED"] = "true"
+        os.environ["RADARSALUD_SCHEDULER_HOURS"] = str(refresh_hours)
+        get_settings.cache_clear()
     uvicorn.run(
         "radarsalud.main:app",
         host=host or settings.host,
         port=port or settings.port,
         reload=reload,
     )
+
+
+@app.command("auto-refresh")
+def auto_refresh_cmd(
+    include_heavy: bool = typer.Option(True, "--include-heavy/--no-heavy"),
+) -> None:
+    """Lanza una actualización de datos reales en primer plano (ingesta + análisis)."""
+    configure_logging()
+    with session_scope() as session:
+        if include_heavy:
+            ingestion_service.run_source(session, "isciii_momo")
+        else:
+            ingestion_service.run_all(session)
+    with session_scope() as session:
+        summary = analytics_service.run_analysis(session, data_mode="real")
+    typer.echo(f"✅ Datos reales actualizados. {summary['alerts_created']} alertas.")
 
 
 if __name__ == "__main__":  # pragma: no cover

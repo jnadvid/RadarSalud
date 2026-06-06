@@ -17,7 +17,9 @@
     <nav>
       <a href="/" class="{{ 'active' if path == '/' else '' }}">Panel</a>
       <a href="/map" class="{{ 'active' if path.startswith('/map') else '' }}">Mapa</a>
+      <a href="/alerts" class="{{ 'active' if path.startswith('/alerts') else '' }}">Alertas</a>
       <a href="/simulation" class="{{ 'active' if path.startswith('/simulation') else '' }}">Simulación</a>
+      <a href="/import" class="{{ 'active' if path.startswith('/import') else '' }}">Importar</a>
       <a href="/sources" class="{{ 'active' if path.startswith('/sources') else '' }}">Fuentes</a>
       <a href="/docs">API</a>
     </nav>

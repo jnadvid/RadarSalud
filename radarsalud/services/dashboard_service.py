@@ -100,6 +100,41 @@ def mortality_timeseries(session: Session) -> dict[str, Any]:
     }
 
 
+def province_timeseries(session: Session, province: str) -> dict[str, Any]:
+    """Serie de mortalidad observada vs. esperada de UNA provincia."""
+    obs = session.scalars(
+        select(Observation)
+        .where(
+            Observation.data_mode.in_(_REAL_MODES),
+            Observation.signal_type == "mortalidad",
+            Observation.province == province,
+        )
+        .order_by(Observation.observed_at)
+    ).all()
+
+    labels, observed, expected = [], [], []
+    for o in obs:
+        if o.observed_at is None:
+            continue
+        labels.append(o.observed_at.date().isoformat())
+        observed.append(o.value)
+        expected.append(_payload_expected(o))
+
+    latest_excess = None
+    if observed and expected and observed[-1] is not None and expected[-1]:
+        latest_excess = round((observed[-1] - expected[-1]) / expected[-1] * 100, 1)
+
+    return {
+        "province": province,
+        "labels": labels,
+        "observed": observed,
+        "expected": expected,
+        "points": len(labels),
+        "latest_excess_pct": latest_excess,
+        "unit": "defunciones/día",
+    }
+
+
 def top_excess(session: Session, limit: int = 10) -> dict[str, Any]:
     """Provincias con mayor exceso de mortalidad en su último dato disponible."""
     obs = session.scalars(
