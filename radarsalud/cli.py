@@ -82,15 +82,22 @@ def ingest(source: str = typer.Option(..., "--source", help="Nombre del conector
 
 
 @app.command("ingest-all")
-def ingest_all() -> None:
+def ingest_all(
+    include_heavy: bool = typer.Option(
+        False, "--include-heavy", help="Incluir conectores pesados (p. ej. ISCIII MoMo)"
+    ),
+) -> None:
     """Ejecuta la ingesta de todas las fuentes (operativas y plantillas)."""
     configure_logging()
     with session_scope() as session:
-        runs = ingestion_service.run_all(session)
+        runs = ingestion_service.run_all(session, include_heavy=include_heavy)
         # Leer atributos dentro del contexto de sesión (evita DetachedInstance).
         statuses = [r.status for r in runs]
     ok = sum(1 for s in statuses if s == "success")
     typer.echo(f"Ingesta completada: {len(statuses)} conectores, {ok} con datos reales.")
+    if not include_heavy:
+        typer.echo("ℹ️  Para incluir mortalidad real (ISCIII MoMo): "
+                   "radarsalud ingest --source isciii_momo  (o ingest-all --include-heavy)")
 
 
 @app.command("import-csv")

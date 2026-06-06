@@ -43,6 +43,62 @@ def _popup_html(alert: dict[str, Any]) -> str:
     )
 
 
+def _obs_popup_html(o: dict[str, Any]) -> str:
+    def esc(x: Any) -> str:
+        return html.escape("" if x is None else str(x))
+
+    mode_badge = (
+        '<span style="background:#8e44ad;color:#fff;padding:1px 5px;border-radius:4px">SIMULACIÓN</span>'
+        if o.get("is_sim") else
+        '<span style="background:#16a085;color:#fff;padding:1px 5px;border-radius:4px">REAL</span>'
+    )
+    baseline = o.get("baseline")
+    bh = o.get("baseline_high")
+    base_txt = ""
+    if baseline is not None or bh is not None:
+        base_txt = (
+            f"<b>Esperado:</b> {esc(round(baseline, 1) if baseline is not None else '—')}"
+            f" (límite alto {esc(round(bh, 1) if bh is not None else '—')})<br>"
+        )
+    return (
+        '<div style="font-size:13px;max-width:300px;line-height:1.4">'
+        f"<b>Modo:</b> {mode_badge}<br>"
+        f"<b>Indicador:</b> {esc(o.get('health_event'))} / {esc(o.get('signal_type'))}<br>"
+        f"<b>Provincia:</b> {esc(o.get('province') or o.get('autonomous_community'))}<br>"
+        f"<b>Fecha:</b> {esc(o.get('observed_at'))}<br>"
+        f"<b>Valor observado:</b> {esc(o.get('value'))} {esc(o.get('unit') or '')}<br>"
+        f"{base_txt}"
+        f"<b>Estado:</b> {esc(o.get('status'))}"
+        "</div>"
+    )
+
+
+def _add_observations_layer(fmap: folium.Map, observations: list[dict[str, Any]]) -> None:
+    """Capa con el último dato de salud por territorio (visible por defecto)."""
+    if not observations:
+        return
+    group = folium.FeatureGroup(name="🩺 Datos de salud (último valor)", show=True)
+    for o in observations:
+        lat, lon = o.get("latitude"), o.get("longitude")
+        if lat is None or lon is None:
+            continue
+        is_sim = o.get("is_sim")
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=8,
+            color="#8e44ad" if is_sim else "#2c3e50",
+            weight=2 if is_sim else 1,
+            fill=True,
+            fill_color=o.get("color", "#2980b9"),
+            fill_opacity=0.8,
+            dash_array="4,4" if is_sim else None,
+            popup=folium.Popup(_obs_popup_html(o), max_width=320),
+            tooltip=("[SIM] " if is_sim else "")
+            + f"{o.get('health_event')} {o.get('value')} · {o.get('province') or ''}",
+        ).add_to(group)
+    group.add_to(fmap)
+
+
 def _source_popup_html(s: dict[str, Any]) -> str:
     def esc(x: Any) -> str:
         return html.escape("" if x is None else str(x))
@@ -88,6 +144,7 @@ def _add_sources_layer(fmap: folium.Map, sources: list[dict[str, Any]]) -> None:
 
 
 def build_map(alerts: list[dict[str, Any]], *, sources: list[dict[str, Any]] | None = None,
+              observations: list[dict[str, Any]] | None = None,
               title: str = "RadarSalud") -> folium.Map:
     """Construye un objeto folium.Map con marcadores y capas conmutables."""
     fmap = folium.Map(
@@ -149,6 +206,7 @@ def build_map(alerts: list[dict[str, Any]], *, sources: list[dict[str, Any]] | N
             popup=folium.Popup(_popup_html(alert), max_width=340),
         ).add_to(get_group(layer_name(event), show=False))
 
+    _add_observations_layer(fmap, observations or [])
     _add_sources_layer(fmap, sources or [])
 
     folium.LayerControl(collapsed=False).add_to(fmap)
@@ -158,11 +216,15 @@ def build_map(alerts: list[dict[str, Any]], *, sources: list[dict[str, Any]] | N
     <div style="position: fixed; bottom: 24px; left: 24px; z-index: 9999;
         background: white; padding: 10px 12px; border:1px solid #ccc; border-radius:6px;
         font-size:12px; box-shadow:0 1px 4px rgba(0,0,0,.2)">
-      <b>Severidad</b><br>
+      <b>Alertas — severidad</b><br>
       <span style="color:#2ecc71">●</span> Baja
       <span style="color:#f1c40f">●</span> Media
       <span style="color:#e67e22">●</span> Alta
       <span style="color:#e74c3c">●</span> Crítica<br>
+      <b>Datos de salud</b>:
+      <span style="color:#2980b9">●</span> dato
+      <span style="color:#27ae60">●</span> esperado
+      <span style="color:#e74c3c">●</span> exceso<br>
       <span style="color:#8e44ad">◌</span> Borde morado discontinuo = SIMULACIÓN<br>
       <b>Fuentes</b> (capa opcional):
       <span style="color:#27ae60">●</span> operativa
@@ -175,6 +237,7 @@ def build_map(alerts: list[dict[str, Any]], *, sources: list[dict[str, Any]] | N
 
 
 def render_map_html(alerts: list[dict[str, Any]],
-                    sources: list[dict[str, Any]] | None = None) -> str:
+                    sources: list[dict[str, Any]] | None = None,
+                    observations: list[dict[str, Any]] | None = None) -> str:
     """Devuelve el HTML de página completa del mapa (standalone)."""
-    return build_map(alerts, sources=sources).get_root().render()
+    return build_map(alerts, sources=sources, observations=observations).get_root().render()

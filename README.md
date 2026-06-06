@@ -59,10 +59,18 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 radarsalud init-db        # crea SQLite + siembra el catálogo de fuentes
-radarsalud ingest-all     # intenta ingerir datos reales abiertos
-radarsalud analyze --mode real
+radarsalud ingest-all     # ingesta de fuentes ligeras (catálogo, RSS…)
+radarsalud ingest --source isciii_momo   # DATOS REALES: mortalidad por provincia (ISCIII MoMo)
+radarsalud analyze --mode real           # detecta anomalías sobre los datos reales
 radarsalud serve          # arranca FastAPI en http://127.0.0.1:8000
 ```
+
+> **¿De dónde salen los datos del mapa?** El conector **ISCIII MoMo** descarga
+> mortalidad diaria **real, observada y esperada, por provincia** (CSV abierto).
+> Tras `ingest --source isciii_momo` + `analyze`, el mapa muestra el último valor
+> por provincia (color según exceso sobre lo esperado) y las anomalías
+> detectadas. Es una descarga grande (~700 MB en streaming, ~30–90 s), por eso es
+> un conector «pesado» y no entra en `ingest-all` por defecto.
 
 Después abre:
 

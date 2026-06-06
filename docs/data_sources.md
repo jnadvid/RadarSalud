@@ -24,7 +24,8 @@ Al sembrar, `operative`/`open` quedan `enabled = true`; el resto, `enabled = fal
 
 | Fuente | Organización | Tipo | Estado | Conector | Notas |
 |--------|--------------|------|--------|----------|-------|
-| `datos_gob_es` | datos.gob.es (Gobierno de España) | api | **operative** | `datos_gob_es` (operativo) | API abierta del catálogo nacional, sin clave. Descubre datasets de salud pública y guarda metadatos. |
+| `datos_gob_es` | datos.gob.es (Gobierno de España) | api | **operative** | `datos_gob_es` (operativo) | API abierta del catálogo nacional, sin clave. Descubre datasets de salud pública y guarda metadatos (enlaces), no valores. |
+| `isciii_momo` | ISCIII - MoMo | csv | **operative** | `isciii_momo` (operativo, **pesado**) | **Mortalidad observada y esperada por provincia y fecha** (CSV abierto). Es la fuente que llena el mapa con datos reales. Volcado ~700 MB en streaming; excluido de `ingest-all` salvo `--include-heavy`. Ejecutar: `radarsalud ingest --source isciii_momo`. |
 | `ine_poblacion` | INE | api | manual_download | `ine` (plantilla) | Población por provincia/municipio para tasas. API Tempus3 / CSV; endpoint por fijar. |
 | `aemet_opendata` | AEMET | api | api_key_required | `aemet` (plantilla) | Temperatura, avisos, calor extremo. Requiere `AEMET_API_KEY`. Sin clave, desactivado. |
 | `isciii_sivira` | ISCIII - SiVIRA | html | pending_verification | `isciii_sivira` (plantilla) | Gripe, COVID-19, VRS. Mucha info en informes; sin OCR en el MVP. |

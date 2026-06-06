@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/v1", tags=["ingestion"])
 
 class IngestRequest(BaseModel):
     source: str | None = None  # nombre de conector; None = todos
+    include_heavy: bool = False  # incluir conectores pesados (ISCIII MoMo)
 
 
 @router.post("/ingest/run")
@@ -28,7 +29,7 @@ def ingest_run(payload: IngestRequest, session: Session = Depends(get_session)):
             "records_inserted": run.records_inserted,
             "message": run.error_message,
         }
-    runs = ingestion_service.run_all(session)
+    runs = ingestion_service.run_all(session, include_heavy=payload.include_heavy)
     return {
         "runs": [
             {

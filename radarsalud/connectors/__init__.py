@@ -15,6 +15,7 @@ from radarsalud.connectors.boe import BoeConnector
 from radarsalud.connectors.comunidades_autonomas import ComunidadesAutonomasConnector
 from radarsalud.connectors.csv_local import CsvLocalConnector
 from radarsalud.connectors.ine import IneConnector
+from radarsalud.connectors.isciii_momo import IsciiiMomoConnector
 from radarsalud.connectors.isciii_sivira import IsciiiSiviraConnector
 from radarsalud.connectors.ministerio_sanidad import MinisterioSanidadConnector
 from radarsalud.connectors.rss_institucional import RssInstitucionalConnector
@@ -25,6 +26,7 @@ def get_connectors() -> list[BaseConnector]:
     return [
         DatosGobConnector(),
         RssInstitucionalConnector(),
+        IsciiiMomoConnector(),
         IneConnector(),
         AemetConnector(),
         IsciiiSiviraConnector(),

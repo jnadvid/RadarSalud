@@ -73,6 +73,22 @@ national:
       Gran parte de la información se publica en informes; falta confirmar un
       recurso estructurado abierto y estable. Sin OCR en el MVP.
 
+  - name: isciii_momo
+    organization: "Instituto de Salud Carlos III (ISCIII) - MoMo"
+    url: "https://momo.isciii.es/"
+    source_type: csv
+    category: salud
+    license: "ISCIII - datos abiertos con cita de la fuente"
+    access_mode: operative
+    refresh_frequency: diaria
+    connector: isciii_momo
+    is_real_source: true
+    notes: >-
+      Monitorización de la Mortalidad (MoMo): mortalidad observada y esperada por
+      provincia y fecha. Conector REAL operativo. El volcado completo es grande
+      (~700 MB), por lo que es un conector "pesado": se ejecuta con
+      `radarsalud ingest --source isciii_momo` (no en ingest-all por defecto).
+
   - name: ministerio_sanidad
     organization: "Ministerio de Sanidad"
     url: "https://www.sanidad.gob.es"

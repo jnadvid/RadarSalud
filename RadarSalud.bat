@@ -58,21 +58,30 @@ REM ---------------------------------------------------------------
 REM  5. Ingesta de datos reales abiertos. Requiere internet.
 REM     Si falla por red, continuamos: el sistema sigue siendo usable.
 REM ---------------------------------------------------------------
-echo [4/6] Ingesta de datos reales abiertos. Requiere internet...
+echo [4/7] Ingesta de datos reales abiertos. Requiere internet...
 "%VRS%" ingest-all
 if errorlevel 1 echo [AVISO] La ingesta no se completo. Posible falta de internet. Se continua.
 
 REM ---------------------------------------------------------------
+REM  5. Mortalidad real por provincia (ISCIII MoMo). Descarga grande
+REM     en streaming; suele tardar entre 30 y 90 segundos.
+REM ---------------------------------------------------------------
+echo [5/7] Descargando datos REALES de mortalidad por provincia (ISCIII MoMo)...
+echo        Puede tardar entre 30 y 90 segundos. Es lo que llena el mapa con datos reales.
+"%VRS%" ingest --source isciii_momo
+if errorlevel 1 echo [AVISO] No se pudo descargar MoMo. El resto del sistema sigue funcionando.
+
+REM ---------------------------------------------------------------
 REM  6. Deteccion de anomalias sobre datos reales
 REM ---------------------------------------------------------------
-echo [5/6] Detectando anomalias en datos reales...
+echo [6/7] Detectando anomalias en datos reales...
 "%VRS%" analyze --mode real
 if errorlevel 1 echo [AVISO] El analisis no genero resultados todavia. Se continua.
 
 REM ---------------------------------------------------------------
 REM  7. Abrir el navegador y arrancar el servidor local
 REM ---------------------------------------------------------------
-echo [6/6] Arrancando servidor en http://127.0.0.1:8000 ...
+echo [7/7] Arrancando servidor en http://127.0.0.1:8000 ...
 echo.
 echo  Se abrira el navegador automaticamente en unos segundos.
 echo  Paginas:

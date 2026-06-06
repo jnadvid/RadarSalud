@@ -41,6 +41,8 @@ class BaseConnector:
     source_type: str = "api"
     operational: bool = False
     requires_key: bool = False
+    # heavy=True: descarga/proceso costoso; se excluye de `ingest-all` por defecto.
+    heavy: bool = False
     access_mode: str = "pending_verification"
     organization: str | None = None
     url: str | None = None

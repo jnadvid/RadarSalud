@@ -169,12 +169,12 @@ def run_source(session: Session, name: str) -> IngestionRun | None:
     return run_connector(session, connector)
 
 
-def run_all(session: Session) -> list[IngestionRun]:
+def run_all(session: Session, *, include_heavy: bool = False) -> list[IngestionRun]:
+    """Ejecuta todos los conectores. Los `heavy` se omiten salvo include_heavy=True."""
     runs = []
     for connector in get_connectors():
-        if not connector.is_available():
-            # Igualmente registramos el intento como skipped para trazabilidad.
-            runs.append(run_connector(session, connector))
+        if connector.heavy and not include_heavy:
+            logger.info("Conector pesado omitido en ingest-all: %s", connector.name)
             continue
         runs.append(run_connector(session, connector))
     return runs

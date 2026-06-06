@@ -28,6 +28,21 @@ def test_provinces_geojson():
     assert len(gj["features"]) == 52
 
 
+def test_render_map_with_health_observations():
+    observations = [
+        {
+            "data_mode": "real", "is_sim": False, "health_event": "mortalidad",
+            "signal_type": "mortalidad", "province": "Madrid", "autonomous_community": "Madrid",
+            "observed_at": "2026-06-01", "value": 300, "unit": "defunciones",
+            "baseline": 150, "baseline_high": 200, "status": "exceso sobre lo esperado",
+            "color": "#e74c3c", "latitude": 40.42, "longitude": -3.70,
+        }
+    ]
+    html = render_map_html([], observations=observations)
+    assert "Datos de salud" in html
+    assert "mortalidad" in html
+
+
 def test_render_map_with_alerts():
     alerts = [
         {

@@ -6,9 +6,11 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+import json
+
 from radarsalud.maps.folium_map import render_map_html
 from radarsalud.maps.spain_geojson import SPAIN_CENTER
-from radarsalud.models import Alert, Source
+from radarsalud.models import Alert, Observation, Source
 from radarsalud.normalizers.geography import centroid, community_centroid
 
 
@@ -41,8 +43,6 @@ def get_map_alerts(session: Session, mode: str = "all") -> list[dict[str, Any]]:
         source_label = None
         if a.source_ids_json:
             try:
-                import json
-
                 ids = json.loads(a.source_ids_json)
                 names = [source_names.get(i) for i in ids if source_names.get(i)]
                 source_label = ", ".join(names) if names else None
@@ -123,6 +123,80 @@ def get_source_features(session: Session, *, only_enabled: bool = False) -> list
     return features
 
 
+def get_observation_features(session: Session, mode: str = "all") -> list[dict[str, Any]]:
+    """Último valor observado por territorio y señal, para mostrarlo en el mapa.
+
+    Esto hace que el mapa muestre DATOS DE SALUD (no solo alertas): el valor más
+    reciente por provincia/comunidad, con su baseline cuando la fuente lo aporta
+    (p. ej. mortalidad esperada de MoMo) y un color según si hay exceso.
+    """
+    if mode == "real":
+        modes = ["real", "manual_import"]
+    elif mode == "simulation":
+        modes = ["simulation"]
+    else:
+        modes = ["real", "manual_import", "simulation"]
+
+    obs = session.scalars(
+        select(Observation)
+        .where(Observation.data_mode.in_(modes))
+        .order_by(Observation.observed_at)
+    ).all()
+
+    # Última observación por (modo, territorio, señal, evento).
+    latest: dict[tuple, Observation] = {}
+    for o in obs:
+        key = (o.data_mode, o.province or o.autonomous_community, o.signal_type, o.health_event)
+        latest[key] = o  # orden ascendente: la última gana
+
+    features: list[dict[str, Any]] = []
+    for o in latest.values():
+        lat, lon = o.latitude, o.longitude
+        if lat is None or lon is None:
+            c = centroid(o.province) or community_centroid(o.autonomous_community)
+            if c:
+                lat, lon = c
+        if lat is None or lon is None:
+            continue
+
+        baseline = baseline_high = None
+        if o.normalized_payload_json:
+            try:
+                p = json.loads(o.normalized_payload_json)
+                baseline = p.get("esperadas_base")
+                baseline_high = p.get("q99")
+            except (ValueError, TypeError):
+                pass
+
+        if baseline_high is not None and o.value is not None and o.value > baseline_high:
+            status, color = "exceso sobre lo esperado", "#e74c3c"
+        elif baseline_high is not None and o.value is not None:
+            status, color = "dentro de lo esperado", "#27ae60"
+        else:
+            status, color = "dato observado", "#2980b9"
+
+        features.append(
+            {
+                "data_mode": o.data_mode,
+                "is_sim": o.data_mode == "simulation",
+                "health_event": o.health_event,
+                "signal_type": o.signal_type,
+                "province": o.province,
+                "autonomous_community": o.autonomous_community,
+                "observed_at": o.observed_at.isoformat() if o.observed_at else None,
+                "value": o.value,
+                "unit": o.unit,
+                "baseline": baseline,
+                "baseline_high": baseline_high,
+                "status": status,
+                "color": color,
+                "latitude": lat,
+                "longitude": lon,
+            }
+        )
+    return features
+
+
 def build_geojson(session: Session, mode: str = "all") -> dict[str, Any]:
     """FeatureCollection GeoJSON de las alertas según el modo."""
     features = []
@@ -141,5 +215,9 @@ def build_geojson(session: Session, mode: str = "all") -> dict[str, Any]:
 
 
 def render_map(session: Session, mode: str = "all") -> str:
-    """HTML del mapa Folium para el modo indicado, enriquecido con las fuentes."""
-    return render_map_html(get_map_alerts(session, mode), sources=get_source_features(session))
+    """HTML del mapa Folium: datos de salud + alertas + cobertura de fuentes."""
+    return render_map_html(
+        get_map_alerts(session, mode),
+        sources=get_source_features(session),
+        observations=get_observation_features(session, mode),
+    )
